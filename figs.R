@@ -5,8 +5,6 @@ library(ggthemes)
 setwd("/Users/Anika/Documents/GradSchool/FIA_CompetitionModel/")
 
 # Figure 1, Individual bar graph -------------------------------------
-#a) growth
-
 #b) mortality
 changes <- readRDS("output/changes_growth.RDS")
 
@@ -25,12 +23,6 @@ ggplot(data = changes,
   geom_errorbar(aes(ymin = change-se, ymax = change+se), width = 0.2,
                 position = position_dodge(width = 0.65)) 
 dev.off()
-
-#c) recr
-
-# Figure 2, % change maps --------------------------------------------
-
-# Figure 3, % change by forest type ----------------------------------
 
 # Figure 4, evergreen vs deciduous, traits ---------------------------
 #a) growth
