@@ -1,0 +1,78 @@
+
+
+
+
+
+######################
+# 
+# recr_prep.R
+#
+#
+# prepare recruitment data for models_ind.R
+# produces "output/nci_formodels.RDS"
+#
+#
+# Anika Petach
+# 12/17/18
+#
+######################
+
+require(data.table)
+require(dplyr)
+
+options(scipen=6)
+
+setwd("/Users/Anika/Documents/GradSchool/FIA_CompetitionModel/")
+FIA <- readRDS("output/indlevel_data.RDS") #import data table
+
+# Remove islands -----------------------------------------------------------
+plot <- fread("data/raw/plot.csv", select = c('CN', 
+                                              'STATECD'))
+plot$CN <- as.numeric(plot$CN)
+FIA <- merge(FIA, plot, by.x="PCN1", by.y="CN", all.x=T, all.y=F)
+FIA <- FIA[STATECD != 15 & STATECD < 60,]
+
+# NCI_prop and NCI_total ---------------------------------------------------
+# NCI total
+FIA[, NCI_total1 := NCI_Nfixer1 + NCI_nonfixer1]
+FIA[, NCI_total2 := NCI_Nfixer2 + NCI_nonfixer2]
+
+# NCI prop
+FIA[, NCI_prop1 := NCI_Nfixer1 / NCI_total1]
+FIA[, NCI_prop2 := NCI_Nfixer2 / NCI_total2]
+# When NCI_total1 or NCI_total2 is 0 then NCI_prop should be 0 not NA
+FIA[NCI_total1==0, NCI_prop1 := 0]
+FIA[NCI_total2==0, NCI_prop2 := 0]
+
+# remove DISTm > 7.3152 #should remove after you filter DESIGNCD
+# remove all trees from plots where any tree is over 7.3152m (was different design code)
+#FIA <- FIA[DISTm < 7.3152]
+# temp <- FIA[DISTm > 7.3152]
+# plotsout <- unique(temp$PCN1)
+# FIA <- FIA[!PCN1 %in% plotsout]
+
+# recr <- dplyr::select(FIA, PCN2, TCN2, MEASYEAR2, SPCD, DIAcm2, TPA_UNADJ, Genus, FIX,
+#                       LAT, LON,
+#                       ACT1vsRIZ0, NCI_weighted_Nfixer2, NCI_weighted_nonfixer2, ELEVm, SUBP1,
+#                       NCI_total2, NCI_prop2, CCLCD2, STDAGE, SLOPE, ASPECT, CARBON_LITTER2, 
+#                       CARBON_SOIL_ORG2, CARBON_UNDERSTORY_AG2, DSTRBCD_TYPE1_2, FATE, t)
+
+# Calc NCI_prop and NCI total
+#recr$NCI_prop2 <- recr$NCI_Nfixer2/(recr$NCI_Nfixer2 + recr$NCI_nonfixer2)
+#recr$NCI2 <- recr$NCI_Nfixer2 + recr$NCI_nonfixer2
+
+xtabs(~FATE + FIX, data=FIA)
+
+# transform and scale covariates
+# rs <- recr %>%
+#   mutate(NCI_props = as.vector(scale(asin(sqrt(NCI_prop2)))),
+#          dbhs = as.vector(scale(log(DIAcm2))),
+#          NCIs = as.vector(scale(log(NCI_total2 + 0.001))))
+rs <- FIA %>%
+  mutate(NCI_props = as.vector(scale(NCI_prop2, center=T, scale=T)),
+         dbhs = as.vector(scale(dbh2, center=T, scale=T)),
+         NCIs = as.vector(scale(NCI_total2, center=T, scale=T)))
+
+rs <- dplyr::select(rs, -spcd1, -spcd2, -tpha1, -tpha2)
+
+saveRDS(rs, "output/nci_formodels_recr.RDS")
